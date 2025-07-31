@@ -19,17 +19,43 @@ import {
 import { degToRad } from "three/src/math/MathUtils.js";
 import { pageAtom, pages } from "./UI";
 
-const easingFactor = 0.5; // Controls the speed of the easing
-const easingFactorFold = 0.3; // Controls the speed of the easing
-const insideCurveStrength = 0.18; // Controls the strength of the curve
-const outsideCurveStrength = 0.05; // Controls the strength of the curve
-const turningCurveStrength = 0.09; // Controls the strength of the curve
+// Add these imports for the love effect
+import * as THREE from 'three';
+// import { EffectComposer, RenderPass, ShaderPass } from 'postprocessing';
+
+const easingFactor = 0.5;
+const easingFactorFold = 0.3;
+const insideCurveStrength = 0.18;
+const outsideCurveStrength = 0.05;
+const turningCurveStrength = 0.09;
 
 const PAGE_WIDTH = 1.28;
-const PAGE_HEIGHT = 1.71; // 4:3 aspect ratio
+const PAGE_HEIGHT = 1.71;
 const PAGE_DEPTH = 0.003;
 const PAGE_SEGMENTS = 30;
 const SEGMENT_WIDTH = PAGE_WIDTH / PAGE_SEGMENTS;
+
+// Heart geometry creation function
+function createHeartGeometry(size = 0.1) {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.bezierCurveTo(0, 0.5 * size, 0.5 * size, size, 0, size);
+  shape.bezierCurveTo(-0.5 * size, size, 0, 0.5 * size, 0, 0);
+  
+  const extrudeSettings = {
+    steps: 1,
+    depth: 0.05,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.02,
+    bevelOffset: 0,
+    bevelSegments: 5
+  };
+  
+  return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+}
+
+const heartGeometry = createHeartGeometry(0.1);
 
 const pageGeometry = new BoxGeometry(
   PAGE_WIDTH,
@@ -47,15 +73,13 @@ const skinIndexes = [];
 const skinWeights = [];
 
 for (let i = 0; i < position.count; i++) {
-  // ALL VERTICES
-  vertex.fromBufferAttribute(position, i); // get the vertex
-  const x = vertex.x; // get the x position of the vertex
+  vertex.fromBufferAttribute(position, i);
+  const x = vertex.x;
+  const skinIndex = Math.max(0, Math.floor(x / SEGMENT_WIDTH));
+  let skinWeight = (x % SEGMENT_WIDTH) / SEGMENT_WIDTH;
 
-  const skinIndex = Math.max(0, Math.floor(x / SEGMENT_WIDTH)); // calculate the skin index
-  let skinWeight = (x % SEGMENT_WIDTH) / SEGMENT_WIDTH; // calculate the skin weight
-
-  skinIndexes.push(skinIndex, skinIndex + 1, 0, 0); // set the skin indexes
-  skinWeights.push(1 - skinWeight, skinWeight, 0, 0); // set the skin weights
+  skinIndexes.push(skinIndex, skinIndex + 1, 0, 0);
+  skinWeights.push(1 - skinWeight, skinWeight, 0, 0);
 }
 
 pageGeometry.setAttribute(
@@ -68,7 +92,7 @@ pageGeometry.setAttribute(
 );
 
 const whiteColor = new Color("white");
-const emissiveColor = new Color("orange");
+const emissiveColor = new Color("#C6C2C2");
 
 const pageMaterials = [
   new MeshStandardMaterial({
@@ -103,8 +127,11 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
   const group = useRef();
   const turnedAt = useRef(0);
   const lastOpened = useRef(opened);
-
   const skinnedMeshRef = useRef();
+  
+  // State for love particles
+  const [hearts, setHearts] = useState([]);
+  const heartsRef = useRef([]);
 
   const manualSkinnedMesh = useMemo(() => {
     const bones = [];
@@ -117,7 +144,7 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
         bone.position.x = SEGMENT_WIDTH;
       }
       if (i > 0) {
-        bones[i - 1].add(bone); // attach the new bone to the previous bone
+        bones[i - 1].add(bone);
       }
     }
     const skeleton = new Skeleton(bones);
@@ -160,8 +187,6 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
     return mesh;
   }, []);
 
-  // useHelper(skinnedMeshRef, SkeletonHelper, "red");
-
   useFrame((_, delta) => {
     if (!skinnedMeshRef.current) {
       return;
@@ -178,7 +203,38 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
     if (lastOpened.current !== opened) {
       turnedAt.current = +new Date();
       lastOpened.current = opened;
+      
+      // Emit hearts when page is opened
+      if (opened) {
+        const newHearts = [];
+        for (let i = 0; i < 5; i++) {
+          newHearts.push({
+            id: Math.random(),
+            position: [
+              (Math.random() - 0.5) * 0.5,
+              (Math.random() - 0.5) * 0.5,
+              0
+            ],
+            velocity: [
+              (Math.random() - 0.5) * 0.02,
+              Math.random() * 0.03 + 0.02,
+              (Math.random() - 0.5) * 0.02
+            ],
+            rotation: [0, 0, 0],
+            rotationSpeed: [
+              (Math.random() - 0.5) * 0.1,
+              (Math.random() - 0.5) * 0.1,
+              (Math.random() - 0.5) * 0.1
+            ],
+            scale: 0.5 + Math.random() * 0.5,
+            lifetime: 0,
+            maxLifetime: 100 + Math.random() * 50
+          });
+        }
+        setHearts(prev => [...prev, ...newHearts]);
+      }
     }
+    
     let turningTime = Math.min(400, new Date() - turnedAt.current) / 400;
     turningTime = Math.sin(turningTime * Math.PI);
 
@@ -229,6 +285,37 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
         delta
       );
     }
+    
+    // Update hearts
+    setHearts(prevHearts => {
+      return prevHearts
+        .map(heart => {
+          const newLifetime = heart.lifetime + 1;
+          if (newLifetime > heart.maxLifetime) return null;
+          
+          return {
+            ...heart,
+            position: [
+              heart.position[0] + heart.velocity[0],
+              heart.position[1] + heart.velocity[1],
+              heart.position[2] + heart.velocity[2]
+            ],
+            rotation: [
+              heart.rotation[0] + heart.rotationSpeed[0],
+              heart.rotation[1] + heart.rotationSpeed[1],
+              heart.rotation[2] + heart.rotationSpeed[2]
+            ],
+            velocity: [
+              heart.velocity[0] * 0.98,
+              heart.velocity[1] * 0.98 + 0.001, // slight gravity
+              heart.velocity[2] * 0.98
+            ],
+            lifetime: newLifetime,
+            scale: heart.scale * 0.99 // slowly shrink
+          };
+        })
+        .filter(Boolean);
+    });
   });
 
   const [_, setPage] = useAtom(pageAtom);
@@ -258,6 +345,29 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
         ref={skinnedMeshRef}
         position-z={-number * PAGE_DEPTH + page * PAGE_DEPTH}
       />
+      
+      {/* Render hearts */}
+      {hearts.map((heart) => (
+        <mesh
+          key={heart.id}
+          geometry={heartGeometry}
+          position={[
+            heart.position[0],
+            heart.position[1],
+            heart.position[2] - number * PAGE_DEPTH + page * PAGE_DEPTH
+          ]}
+          rotation={heart.rotation}
+          scale={heart.scale}
+        >
+          <meshStandardMaterial 
+            color="#ff3366" 
+            emissive="#ff0066" 
+            emissiveIntensity={0.5}
+            roughness={0.3}
+            metalness={0.1}
+          />
+        </mesh>
+      ))}
     </group>
   );
 };
