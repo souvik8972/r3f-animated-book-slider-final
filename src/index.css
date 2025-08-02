@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100..900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Bonheur+Royale&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,4 +16,9 @@ body {
 
 .outline-text {
   -webkit-text-stroke: 1px white;
+}
+.bonheur-royale-regular {
+  font-family: "Bonheur Royale", cursive;
+  font-weight: 400;
+  font-style: normal;
 }

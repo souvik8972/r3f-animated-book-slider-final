@@ -38,7 +38,7 @@ const FallingHearts = () => {
 
     // Heart settings
     const hearts = [];
-    const heartCount = Math.floor(50);
+    const heartCount = Math.floor(100);
     const heartImages = [];
 
     // Create heart images with different sizes and slight opacity variations
@@ -58,7 +58,7 @@ const FallingHearts = () => {
         x: Math.random() * 2000 - 1000, // Wider spread in 3D space
         y: Math.random() * 2000 - 1000,
         z: Math.random() * 2000 - 1000,
-        size: Math.random() * 10 + 10,
+        size: Math.random() * 100 ,
         speed: Math.random() * -2 + 1,
         angle: Math.random() * 360,
         rotationSpeed: Math.random() * -0.5 - 0.25,

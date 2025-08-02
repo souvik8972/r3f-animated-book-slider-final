@@ -1,6 +1,6 @@
 import { atom, useAtom } from "jotai";
-import { useEffect } from "react";
-
+import { useEffect,useState } from "react";
+import { motion, useAnimation } from "framer-motion";
 const pictures = [
   "DSC00680",
   "DSC00933",
@@ -18,9 +18,8 @@ const pictures = [
   "DSC02031",
   "DSC02064",
   "DSC02069",
- 
   "hhh",
-   "w3",
+  "w3",
 ];
 
 export const pageAtom = atom(0);
@@ -37,110 +36,95 @@ for (let i = 1; i < pictures.length - 1; i += 2) {
   });
 }
 
+
 pages.push({
   front: pictures[pictures.length - 1],
   back: "book-back",
 });
 
+const WavingText = ({ children, index }) => {
+  return (
+    <motion.span
+      className="inline-block"
+      initial={{ y: -1000, opacity: 0 }} // Start above the screen
+      animate={{ 
+        y: 0, 
+        opacity: 1,
+        rotate: [0, -5, 5, 0] // Small wave effect
+      }}
+      transition={{
+        y: {
+          type: "spring",
+          stiffness: 20,
+          damping: 10,
+          delay: index * 0.1
+        },
+        rotate: {
+          delay: index * 0.1 + 0.5,
+          duration: 3,
+          repeat: Infinity,
+          repeatType: "reverse"
+        }
+      }}
+    >
+      {children}
+    </motion.span>
+  );
+};
+
 export const UI = () => {
   const [page, setPage] = useAtom(pageAtom);
+  const [showText, setShowText] = useState(false);
+  const controls = useAnimation();
 
   useEffect(() => {
     const audio = new Audio("/audios/page-flip-01a.mp3");
     audio.play();
+    
+    // Start the animation after a short delay
+    const timer = setTimeout(() => {
+      setShowText(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, [page]);
 
   return (
     <>
-      <main className=" pointer-events-none select-none z-10 fixed  inset-0  flex justify-between flex-col">
-        {/* <a
-          className="pointer-events-auto mt-10 ml-10"
-          href="https://lessons.wawasensei.dev/courses/react-three-fiber"
-        > */}
-          {/* <img className="w-20" src="/images/wawasensei-white.png" /> */}
-        {/* </a> */}
-        <div className="w-full overflow-auto pointer-events-auto flex justify-center">
-          {/* <div className="overflow-auto flex items-center gap-4 max-w-full p-10">
-            {[...pages].map((_, index) => (
-              <button
-                key={index}
-                className={`border-transparent hover:border-white transition-all duration-300  px-4 py-3 rounded-full  text-lg uppercase shrink-0 border ${
-                  index === page
-                    ? "bg-white/90 text-black"
-                    : "bg-black/30 text-white"
-                }`}
-                onClick={() => setPage(index)}
-              >
-                {index === 0 ? "Cover" : `Page ${index}`}
-              </button>
-            ))}
-            <button
-              className={`border-transparent hover:border-white transition-all duration-300  px-4 py-3 rounded-full  text-lg uppercase shrink-0 border ${
-                page === pages.length
-                  ? "bg-white/90 text-black"
-                  : "bg-black/30 text-white"
-              }`}
-              onClick={() => setPage(pages.length)}
-            >
-              Back Cover
-            </button>
-          </div> */}
-        </div>
-      </main>
+      <style jsx global>{`
+        .outline-text {
+          -webkit-text-stroke: 2px white;
+          color: transparent;
+        }
+      `}</style>
 
-      <div className="fixed inset-0 flex items-center -rotate-2 select-none">
-        <div className="relative">
-          <div className="bg-white/0  animate-horizontal-scroll flex items-center gap-8 w-max px-8">
-            {/* <h1 className="shrink-0 text-white text-10xl font-black ">
-              Happy Birthday
-            </h1>
-            <h2 className="shrink-0 text-white text-8xl italic font-light">
-              Neha
-            </h2>
-            <h2 className="shrink-0 text-white text-12xl font-bold">
-              Three.js
-            </h2>
-            <h2 className="shrink-0 text-transparent text-12xl font-bold italic outline-text">
-              Ultimate Guide
-            </h2>
-            <h2 className="shrink-0 text-white text-9xl font-medium">
-              Tutorials
-            </h2>
-            <h2 className="shrink-0 text-white text-9xl font-extralight italic">
-              Learn
-            </h2>
-            <h2 className="shrink-0 text-white text-13xl font-bold">
-              Practice
-            </h2>
-            <h2 className="shrink-0 text-transparent text-13xl font-bold outline-text italic">
-              Creative
-            </h2> */}
-          </div>
-          <div className="absolute top-0 left-0 bg-white/0 animate-horizontal-scroll-2 flex items-center gap-8 px-8 w-max">
-            {/* <h1 className="shrink-0 text-white text-10xl font-black ">
-              Wawa Sensei
-            </h1>
-            <h2 className="shrink-0 text-white text-8xl italic font-light">
-              React Three Fiber
-            </h2>
-            <h2 className="shrink-0 text-white text-12xl font-bold">
-              Three.js
-            </h2>
-            <h2 className="shrink-0 text-transparent text-12xl font-bold italic outline-text">
-              Ultimate Guide
-            </h2>
-            <h2 className="shrink-0 text-white text-9xl font-medium">
-              Tutorials
-            </h2>
-            <h2 className="shrink-0 text-white text-9xl font-extralight italic">
-              Learn
-            </h2>
-            <h2 className="shrink-0 text-white text-13xl font-bold">
-              Practice
-            </h2>
-            <h2 className="shrink-0 text-transparent text-13xl font-bold outline-text italic">
-              Creative
-            </h2> */}
+      {/* ... (your existing main element) */}
+
+      <div className="fixed inset-0 flex items-center justify-center select-none">
+        <div className="relative w-full h-full overflow-hidden">
+          {/* Main centered text with physics-based falling */}
+          <div className="absolute -bottom-5 xl:top-[35%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+            {showText && (
+              <motion.h1 
+                className="text-transparent text-4xl xl:text-8xl bonheur-royale-regular text-nowrap md:text-13xl font-bold outline-text italic mb-4"
+              >
+                {'Happy Birthday'.split('').map((char, i) => (
+                  <WavingText key={i} index={i}>
+                    {char === ' ' ? '\u00A0' : char}
+                  </WavingText>
+                ))}
+              </motion.h1>
+            )}
+            
+            {showText && (
+              <motion.h2 className="text-transparent text-7xl md:text-10xl bonheur-royale-regular font-bold outline-text italic">
+                {'Mona'.split('').map((char, i) => (
+                  <WavingText key={i} index={i + 5}>
+                    {char}
+                  </WavingText>
+                ))}
+              </motion.h2>
+            )}
           </div>
         </div>
       </div>
