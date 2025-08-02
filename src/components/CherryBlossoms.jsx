@@ -58,7 +58,7 @@ const FallingHearts = () => {
         x: Math.random() * 2000 - 1000, // Wider spread in 3D space
         y: Math.random() * 2000 - 1000,
         z: Math.random() * 2000 - 1000,
-        size: Math.random() * 100 ,
+        size: Math.random() * 50 ,
         speed: Math.random() * -2 + 1,
         angle: Math.random() * 360,
         rotationSpeed: Math.random() * -0.5 - 0.25,

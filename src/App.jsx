@@ -87,14 +87,14 @@ function App() {
       {!isMuted && !showCover && <CherryBlossoms />}
 
       <>
-          <UI setIsMuted={setIsMuted} isMuted={isMuted} />
+        {!showCover && <UI setIsMuted={setIsMuted} isMuted={isMuted} />}  
           <Loader />
 
           <Canvas
             className=""
             shadows
             camera={{
-              position: [-0.5, 1, window.innerWidth > 800 ? 4 : 9],
+              position: [-0.5, 1, window.innerWidth > 800 ? 6 : 9],
               fov: 45,
             }}
           >
